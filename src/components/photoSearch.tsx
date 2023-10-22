@@ -7,6 +7,13 @@ interface ImageType {
 	urls: {
 		small: string;
 	};
+	description?: string;
+	created_at?: string;
+	updated_at?: string;
+	likes?: number;
+	color?: string;
+	height?: number;
+	width?: number;
 }
 
 const PhotoSearch = () => {
@@ -94,8 +101,15 @@ const PhotoSearch = () => {
 					</Pressable>
 					<Image style={styles.selectedImage} source={{ uri: selectedImage.urls.small }} />
 					<View style={styles.imageDetails}>
-						<Text style={styles.imageDetailText}>Image ID: {selectedImage.id}</Text>
-						{/* Add more details here */}
+						<Text style={styles.imageDetailText}>User: {selectedImage.user.name}</Text>
+						<Text style={styles.imageDetailText}>Description: {selectedImage.description || 'No description'}</Text>
+						<Text style={styles.imageDetailText}>ID: {selectedImage.id}</Text>
+						<Text style={styles.imageDetailText}>Created At: {selectedImage.created_at}</Text>
+						<Text style={styles.imageDetailText}>Updated At: {selectedImage.updated_at}</Text>
+						<Text style={styles.imageDetailText}>Likes: {selectedImage.likes}</Text>
+						<Text style={styles.imageDetailText}>Color: {selectedImage.color}</Text>
+						<Text style={styles.imageDetailText}>Height: {selectedImage.height}</Text>
+						<Text style={styles.imageDetailText}>Width: {selectedImage.width}</Text>
 					</View>
 				</Animated.View>
 			)}

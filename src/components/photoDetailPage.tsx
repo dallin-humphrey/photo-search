@@ -13,7 +13,7 @@ interface ImageType {
 	};
 	description: string;
 	// Add image data field
-	imageData: any; // You can change 'any' to a more specific type if needed
+	imageData: any[]; // You can change 'any' to a more specific type if needed
 }
 
 interface StackParams {
