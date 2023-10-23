@@ -17,3 +17,6 @@ There are 3 errors that I ran out of time troubleshooting:
 The download doesn't work although I did get it started, I ran out of time to get that part completed. 
 
 The styles aren't as polished as I would like either. 
+
+I would also liked to have gotten the some tests added to the project.
+
