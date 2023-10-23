@@ -15,8 +15,10 @@ import {
 } from 'react-native';
 import { searchPhotos } from '../api/unsplashApi';
 
+// Get the screen height for image rendering
 const { height: screenHeight } = Dimensions.get('window');
 
+// Define the type for images
 interface ImageType {
 	user: {
 		name: string;
@@ -34,20 +36,24 @@ interface ImageType {
 	width?: number;
 }
 
+// Main component for photo search
 const PhotoSearch = () => {
+	// State variables
 	const [searchTerm, setSearchTerm] = useState<string>('');
 	const [images, setImages] = useState<ImageType[]>([]);
 	const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [totalImages, setTotalImages] = useState<number>(0);
 	const [page, setPage] = useState<number>(1); // Current page for the active search
-	const [orientationFilter, setOrientationFilter] = useState<string>('');
+	const [orientationFilter, setOrientationFilter] = useState<string>(''); // TODO: Fix the error here
 	const [popularFilter, setPopularFilter] = useState<boolean>(false);
-	const [colorFilter, setColorFilter] = useState<string>(''); // State for color filter
+	const [colorFilter, setColorFilter] = useState<string>(''); // TODO: Fix the error here
 
+	// Animation and ref
 	const slideAnim = useRef(new Animated.Value(1000)).current;
 	const flatListRef = useRef<FlatList<ImageType> | null>(null);
 
+	// Fetch data from the API
 	const fetchData = async (newSearch = false): Promise<void> => {
 		if (isLoading) {
 			return;
@@ -63,30 +69,25 @@ const PhotoSearch = () => {
 					searchTerm,
 					newSearch ? 1 : page,
 					orientationFilter,
-					colorFilter // Add color filter here
+					colorFilter // TODO: Fix the error here
 				);
 			} else {
-				data = await searchPhotos(searchTerm, newSearch ? 1 : page, '', colorFilter); // No orientation filter
+				data = await searchPhotos(searchTerm, newSearch ? 1 : page, '', colorFilter); // TODO: Fix the error here
 			}
 
+			// Filter images based on likes and orientation
 			let filteredImages = data.results;
-
 			if (popularFilter) {
-				filteredImages = filteredImages.filter((image: ImageType) =>
-					image.likes && image.likes > 500
-				);
+				filteredImages = filteredImages.filter((image: ImageType) => image.likes && image.likes > 500);
 			}
 
 			if (orientationFilter === 'landscape') {
-				filteredImages = filteredImages.filter((image: ImageType) =>
-					image.width && image.height && image.width > image.height
-				);
+				filteredImages = filteredImages.filter((image: ImageType) => image.width && image.height && image.width > image.height);
 			} else if (orientationFilter === 'portrait') {
-				filteredImages = filteredImages.filter((image: ImageType) =>
-					image.width && image.height && image.height > image.width
-				);
+				filteredImages = filteredImages.filter((image: ImageType) => image.width && image.height && image.height > image.width);
 			}
 
+			// Update state based on whether it's a new search or not
 			if (newSearch) {
 				setImages(filteredImages);
 				setPage(1);
@@ -103,12 +104,14 @@ const PhotoSearch = () => {
 		}
 	};
 
+	// Load more images when reaching the end of the list
 	const handleLoadMore = (info: { distanceFromEnd: number }) => {
 		if (!isLoading) {
 			fetchData();
 		}
 	};
 
+	// Apply filters and fetch data
 	const handleFilter = () => {
 		setImages([]);
 		setPage(1);
@@ -116,6 +119,7 @@ const PhotoSearch = () => {
 		fetchData();
 	};
 
+	// Handle search action
 	const handleSearch = () => {
 		setImages([]);
 		setPage(1);
@@ -123,6 +127,7 @@ const PhotoSearch = () => {
 		fetchData(true);
 	};
 
+	// Animate the selected image into view
 	const slideIn = () => {
 		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
 
@@ -133,6 +138,7 @@ const PhotoSearch = () => {
 		}).start();
 	};
 
+	// Animate the selected image out of view
 	const slideOut = () => {
 		Animated.timing(slideAnim, {
 			toValue: 1000,
@@ -141,22 +147,26 @@ const PhotoSearch = () => {
 		}).start(() => setSelectedImage(null));
 	};
 
+	// Update animation when a new image is selected
 	useEffect(() => {
 		if (selectedImage) {
 			slideIn();
 		}
 	}, [selectedImage]);
 
+	// Handle image press to select an image
 	const onImagePress = (item: ImageType) => {
 		setSelectedImage(item);
 	};
 
+	// Render each image item
 	const renderImageItem = ({ item }: { item: ImageType }) => (
 		<Pressable onPress={() => onImagePress(item)}>
 			<Image style={styles.image} source={{ uri: item.urls.small }} />
 		</Pressable>
 	);
 
+	// Handle scroll events for animation
 	const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
 		Animated.event(
 			[{ nativeEvent: { contentOffset: { y: slideAnim } } }],
@@ -164,8 +174,10 @@ const PhotoSearch = () => {
 		)(event);
 	};
 
+	// Main render function
 	return (
 		<SafeAreaView style={styles.container}>
+			{/* Search bar */}
 			<View style={styles.searchBarContainer}>
 				<TextInput
 					style={styles.searchBar}
@@ -177,9 +189,10 @@ const PhotoSearch = () => {
 					<Text style={styles.buttonText}>Search</Text>
 				</Pressable>
 			</View>
-			{/* Orientation filter dropdown */}
+			{/* Filters */}
 			<View style={styles.filterContainer}>
 				<Text>Orientation Filter:</Text>
+				{/* TODO: Replace with a native React Native component */}
 				<select
 					value={orientationFilter}
 					onChange={(e) => setOrientationFilter(e.target.value)}
@@ -190,9 +203,9 @@ const PhotoSearch = () => {
 					<option value="landscape">Landscape</option>
 				</select>
 			</View>
-			{/* Color filter dropdown */}
 			<View style={styles.filterContainer}>
 				<Text>Color Filter:</Text>
+				{/* TODO: Replace with a native React Native component */}
 				<select
 					value={colorFilter}
 					onChange={(e) => setColorFilter(e.target.value)}
@@ -212,9 +225,9 @@ const PhotoSearch = () => {
 					<option value="blue">Blue</option>
 				</select>
 			</View>
-			{/* Popular filter checkbox */}
 			<View style={styles.filterContainer}>
 				<Text>Show Popular Images:</Text>
+				{/* TODO: Replace with a native React Native component */}
 				<input
 					type="checkbox"
 					checked={popularFilter}
@@ -224,6 +237,7 @@ const PhotoSearch = () => {
 			<Pressable style={styles.filterButton} onPress={handleFilter}>
 				<Text style={styles.buttonText}>Filter</Text>
 			</Pressable>
+			{/* Image list */}
 			<FlatList
 				ref={flatListRef}
 				data={images}
@@ -235,7 +249,7 @@ const PhotoSearch = () => {
 				onScroll={onScroll}
 				scrollEventThrottle={16}
 			/>
-
+			{/* Selected image details */}
 			{selectedImage && (
 				<Animated.View style={[styles.selectedImageContainer, { transform: [{ translateY: slideAnim }] }]}>
 					<Pressable style={styles.closeButton} onPress={slideOut}>
@@ -258,6 +272,7 @@ const PhotoSearch = () => {
 		</SafeAreaView>
 	);
 };
+
 
 const styles = StyleSheet.create({
 	container: {

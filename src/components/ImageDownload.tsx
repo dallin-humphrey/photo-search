@@ -1,19 +1,29 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
+// Define the props for the ImageDetails component
 interface ImageDetailsProps {
 	imageUrl: string;
-	imageDetails: any; // Replace with the actual type for image details
+	imageDetails: any; // TODO: Replace with the actual type for image details
 	onClose: () => void;
 }
 
+// Create the ImageDetails component
 const ImageDetails: React.FC<ImageDetailsProps> = ({ imageUrl, imageDetails, onClose }) => {
 	return (
 		<View style={styles.container}>
+			{/* Display the image */}
 			<Image style={styles.image} source={{ uri: imageUrl }} />
+
+			{/* Display the user's name */}
 			<Text style={styles.imageDetailText}>User: {imageDetails.user.name}</Text>
+
+			{/* Display the image description or a default text if not available */}
 			<Text style={styles.imageDetailText}>Description: {imageDetails.description || 'No description'}</Text>
-			{/* Add more image details here as needed */}
+
+			{/* TODO: Add more image details here as needed */}
+
+			{/* Close button to trigger the onClose callback */}
 			<TouchableOpacity style={styles.closeButton} onPress={onClose}>
 				<Text style={styles.closeButtonText}>Close</Text>
 			</TouchableOpacity>
@@ -21,6 +31,7 @@ const ImageDetails: React.FC<ImageDetailsProps> = ({ imageUrl, imageDetails, onC
 	);
 };
 
+// Define the styles for the component
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
