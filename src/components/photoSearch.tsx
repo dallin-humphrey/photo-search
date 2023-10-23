@@ -12,8 +12,10 @@ import {
 	Dimensions,
 	NativeScrollEvent,
 	NativeSyntheticEvent,
+	Switch,
 } from 'react-native';
 import { searchPhotos } from '../api/unsplashApi';
+import { Picker } from '@react-native-picker/picker';
 
 // Get the screen height for image rendering
 const { height: screenHeight } = Dimensions.get('window');
@@ -192,46 +194,45 @@ const PhotoSearch = () => {
 			{/* Filters */}
 			<View style={styles.filterContainer}>
 				<Text>Orientation Filter:</Text>
-				{/* TODO: Replace with a native React Native component */}
-				<select
-					value={orientationFilter}
-					onChange={(e) => setOrientationFilter(e.target.value)}
+				{/* Replaced with a native React Native component */}
+				<Picker
+					selectedValue={orientationFilter}
+					onValueChange={(itemValue) => setOrientationFilter(itemValue)}
 					style={styles.filterSelect}
 				>
-					<option value="">No Filter</option>
-					<option value="portrait">Portrait</option>
-					<option value="landscape">Landscape</option>
-				</select>
+					<Picker.Item label="No Filter" value="" />
+					<Picker.Item label="Portrait" value="portrait" />
+					<Picker.Item label="Landscape" value="landscape" />
+				</Picker>
 			</View>
 			<View style={styles.filterContainer}>
 				<Text>Color Filter:</Text>
-				{/* TODO: Replace with a native React Native component */}
-				<select
-					value={colorFilter}
-					onChange={(e) => setColorFilter(e.target.value)}
+				{/* Replaced with a native React Native component */}
+				<Picker
+					selectedValue={colorFilter}
+					onValueChange={(itemValue) => setColorFilter(itemValue)}
 					style={styles.filterSelect}
 				>
-					<option value="">No Filter</option>
-					<option value="black_and_white">Black & White</option>
-					<option value="black">Black</option>
-					<option value="white">White</option>
-					<option value="yellow">Yellow</option>
-					<option value="orange">Orange</option>
-					<option value="red">Red</option>
-					<option value="purple">Purple</option>
-					<option value="magenta">Magenta</option>
-					<option value="green">Green</option>
-					<option value="teal">Teal</option>
-					<option value="blue">Blue</option>
-				</select>
+					<Picker.Item label="No Filter" value="" />
+					<Picker.Item label="Black & White" value="black_and_white" />
+					<Picker.Item label="Black" value="black" />
+					<Picker.Item label="White" value="white" />
+					<Picker.Item label="Yellow" value="yellow" />
+					<Picker.Item label="Orange" value="orange" />
+					<Picker.Item label="Red" value="red" />
+					<Picker.Item label="Purple" value="purple" />
+					<Picker.Item label="Magenta" value="magenta" />
+					<Picker.Item label="Green" value="green" />
+					<Picker.Item label="Teal" value="teal" />
+					<Picker.Item label="Blue" value="blue" />
+				</Picker>
 			</View>
 			<View style={styles.filterContainer}>
 				<Text>Show Popular Images:</Text>
-				{/* TODO: Replace with a native React Native component */}
-				<input
-					type="checkbox"
-					checked={popularFilter}
-					onChange={() => setPopularFilter(!popularFilter)}
+				{/* Replaced with a native React Native component */}
+				<Switch
+					value={popularFilter}
+					onValueChange={() => setPopularFilter(!popularFilter)}
 				/>
 			</View>
 			<Pressable style={styles.filterButton} onPress={handleFilter}>
