@@ -42,15 +42,13 @@ const PhotoSearch = () => {
 	const [totalImages, setTotalImages] = useState<number>(0);
 	const [page, setPage] = useState<number>(1); // Current page for the active search
 	const [orientationFilter, setOrientationFilter] = useState<string>('');
-
-	// New state for the popular filter
 	const [popularFilter, setPopularFilter] = useState<boolean>(false);
+	const [colorFilter, setColorFilter] = useState<string>(''); // State for color filter
 
 	const slideAnim = useRef(new Animated.Value(1000)).current;
 	const flatListRef = useRef<FlatList<ImageType> | null>(null);
 
-	const fetchData = async (): Promise<void> => {
-		// Prevent multiple simultaneous requests
+	const fetchData = async (newSearch = false): Promise<void> => {
 		if (isLoading) {
 			return;
 		}
@@ -60,21 +58,25 @@ const PhotoSearch = () => {
 		try {
 			let data;
 			if (orientationFilter) {
-				data = await searchPhotos(searchTerm, page, orientationFilter);
+				// Include the color filter parameter when making the API request
+				data = await searchPhotos(
+					searchTerm,
+					newSearch ? 1 : page,
+					orientationFilter,
+					colorFilter // Add color filter here
+				);
 			} else {
-				data = await searchPhotos(searchTerm, page);
+				data = await searchPhotos(searchTerm, newSearch ? 1 : page, '', colorFilter); // No orientation filter
 			}
 
 			let filteredImages = data.results;
 
-			// Apply a filter for images with over 500 likes (popular images)
 			if (popularFilter) {
 				filteredImages = filteredImages.filter((image: ImageType) =>
 					image.likes && image.likes > 500
 				);
 			}
 
-			// Apply a filter for landscape and portrait images
 			if (orientationFilter === 'landscape') {
 				filteredImages = filteredImages.filter((image: ImageType) =>
 					image.width && image.height && image.width > image.height
@@ -85,18 +87,15 @@ const PhotoSearch = () => {
 				);
 			}
 
-			if (page === 1) {
-				// If it's the first page, replace the old images with the new ones.
+			if (newSearch) {
 				setImages(filteredImages);
+				setPage(1);
 			} else {
-				// Otherwise, append to the existing images.
 				setImages((prevImages) => [...prevImages, ...filteredImages]);
+				setPage((prevPage) => prevPage + 1);
 			}
 
 			setTotalImages(data.total);
-
-			// Update page count after a successful fetch
-			setPage((prevPage) => prevPage + 1);
 		} catch (error) {
 			console.error('Error fetching data:', error);
 		} finally {
@@ -106,24 +105,22 @@ const PhotoSearch = () => {
 
 	const handleLoadMore = (info: { distanceFromEnd: number }) => {
 		if (!isLoading) {
-			fetchData(); // Load more images for the active search
+			fetchData();
 		}
 	};
 
 	const handleFilter = () => {
-		// Reset everything before applying filters
 		setImages([]);
-		setPage(1); // Reset page count for the filtered search
+		setPage(1);
 		setTotalImages(0);
-		fetchData(); // Call fetchData directly without setTimeout
+		fetchData();
 	};
 
 	const handleSearch = () => {
-		// Reset everything before a new search
 		setImages([]);
-		setPage(1); // Reset page count for the new search
+		setPage(1);
 		setTotalImages(0);
-		fetchData(); // Call fetchData directly without setTimeout
+		fetchData(true);
 	};
 
 	const slideIn = () => {
@@ -160,10 +157,6 @@ const PhotoSearch = () => {
 		</Pressable>
 	);
 
-	useEffect(() => {
-		console.log('Image Data:', images);
-	}, [images]);
-
 	const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
 		Animated.event(
 			[{ nativeEvent: { contentOffset: { y: slideAnim } } }],
@@ -195,7 +188,28 @@ const PhotoSearch = () => {
 					<option value="">No Filter</option>
 					<option value="portrait">Portrait</option>
 					<option value="landscape">Landscape</option>
-					{/* Add more orientations */}
+				</select>
+			</View>
+			{/* Color filter dropdown */}
+			<View style={styles.filterContainer}>
+				<Text>Color Filter:</Text>
+				<select
+					value={colorFilter}
+					onChange={(e) => setColorFilter(e.target.value)}
+					style={styles.filterSelect}
+				>
+					<option value="">No Filter</option>
+					<option value="black_and_white">Black & White</option>
+					<option value="black">Black</option>
+					<option value="white">White</option>
+					<option value="yellow">Yellow</option>
+					<option value="orange">Orange</option>
+					<option value="red">Red</option>
+					<option value="purple">Purple</option>
+					<option value="magenta">Magenta</option>
+					<option value="green">Green</option>
+					<option value="teal">Teal</option>
+					<option value="blue">Blue</option>
 				</select>
 			</View>
 			{/* Popular filter checkbox */}
@@ -322,15 +336,6 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		marginVertical: 10,
-	},
-	filterTextInput: {
-		flex: 1,
-		height: 40,
-		borderColor: 'gray',
-		borderWidth: 1,
-		marginLeft: 10,
-		paddingLeft: 8,
-		borderRadius: 5,
 	},
 	filterSelect: {
 		height: 40,
