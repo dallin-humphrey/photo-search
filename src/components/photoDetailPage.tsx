@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, FlatList, Image, StyleSheet, SafeAreaView, Pressable, Text, Animated, Dimensions } from 'react-native';
 import { searchPhotos } from '../api/unsplashApi';
+import PhotoDetailPage from '../components/photoSearch';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -21,7 +22,7 @@ interface ImageType {
 	width?: number;
 }
 
-const PhotoSearch = () => {
+const PhotoSearch: React.FC = () => {
 	const [searchTerm, setSearchTerm] = useState<string>('');
 	const [images, setImages] = useState<ImageType[]>([]);
 	const [page, setPage] = useState<number>(1);
@@ -123,6 +124,8 @@ const PhotoSearch = () => {
 						<Text style={styles.imageDetailText}>Height: {selectedImage.height}</Text>
 						<Text style={styles.imageDetailText}>Width: {selectedImage.width}</Text>
 					</View>
+					{/* Add the PhotoDetailPage component with the selected image */}
+					<PhotoDetailPage imageUrl={selectedImage.urls.small} />
 				</Animated.View>
 			)}
 		</SafeAreaView>
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
 		height: 200,
 	},
 	imageListContainer: {
-		flex: 1, // Fill remaining space
+		flex: 1,
 	},
 	selectedImageContainer: {
 		position: 'absolute',
@@ -175,11 +178,11 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		backgroundColor: 'rgba(0,0,0,1)',
 		alignItems: 'center',
-		maxHeight: screenHeight, // Limit the height to screen height
+		maxHeight: screenHeight,
 	},
 	selectedImage: {
 		width: '100%',
-		height: 300, // Adjust the height here to make it bigger
+		height: 300,
 		marginTop: 0,
 	},
 	closeButton: {

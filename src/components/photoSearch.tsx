@@ -35,7 +35,7 @@ interface ImageType {
 }
 
 const PhotoSearch = () => {
-	const [searchTerm, setSearchTerm] = useState<string>('cat');
+	const [searchTerm, setSearchTerm] = useState<string>('');
 	const [images, setImages] = useState<ImageType[]>([]);
 	const [page, setPage] = useState<number>(1);
 	const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
@@ -92,7 +92,7 @@ const PhotoSearch = () => {
 
 		Animated.timing(slideAnim, {
 			toValue: 0,
-			duration: 0,
+			duration: 300,
 			useNativeDriver: true,
 		}).start();
 	};
