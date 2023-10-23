@@ -1,8 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, FlatList, Image, StyleSheet, SafeAreaView, Pressable, Text, Animated } from 'react-native';
+import {
+	View,
+	TextInput,
+	FlatList,
+	Image,
+	StyleSheet,
+	SafeAreaView,
+	Pressable,
+	Text,
+	Animated,
+	Dimensions,
+	NativeScrollEvent,
+	NativeSyntheticEvent,
+} from 'react-native';
 import { searchPhotos } from '../api/unsplashApi';
 
+const { height: screenHeight } = Dimensions.get('window');
+
 interface ImageType {
+	user: {
+		name: string;
+	};
 	id: string;
 	urls: {
 		small: string;
@@ -17,36 +35,64 @@ interface ImageType {
 }
 
 const PhotoSearch = () => {
-	const [searchTerm, setSearchTerm] = useState<string>('');
+	const [searchTerm, setSearchTerm] = useState<string>('cat');
 	const [images, setImages] = useState<ImageType[]>([]);
 	const [page, setPage] = useState<number>(1);
 	const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
+	const [totalImages, setTotalImages] = useState<number>(0);
 
 	const slideAnim = useRef(new Animated.Value(1000)).current;
+	const flatListRef = useRef<FlatList<ImageType> | null>(null);
 
 	const fetchData = async () => {
+		if (isLoading) {
+			return; // Prevent multiple simultaneous requests
+		}
+
+		setIsLoading(true);
+
 		try {
 			const data = await searchPhotos(searchTerm, page);
-			setImages(prevImages => [...prevImages, ...data.results]);
+			const newImages = [...images, ...data.results];
+			setImages(newImages);
+			setTotalImages(data.total);
+
+			// If we've reached the limit of 500 images, stop loading more
+			if (newImages.length >= 500) {
+				return;
+			}
+
+			setPage(prevPage => prevPage + 1);
 		} catch (error) {
 			console.error('Error fetching data:', error);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
-	const handleLoadMore = () => {
-		setPage(prevPage => prevPage + 1);
+	const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+
+	const handleLoadMore = (info: { distanceFromEnd: number }) => {
+		if (!isLoading && images.length < 500 && info.distanceFromEnd < 100) {
+			fetchData();
+		}
 	};
+
 
 	const handleSearch = () => {
 		setImages([]);
 		setPage(1);
+		setTotalImages(0);
 		fetchData();
 	};
 
 	const slideIn = () => {
+		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+
 		Animated.timing(slideAnim, {
 			toValue: 0,
-			duration: 500,
+			duration: 0,
 			useNativeDriver: true,
 		}).start();
 	};
@@ -65,10 +111,26 @@ const PhotoSearch = () => {
 		}
 	}, [selectedImage]);
 
+	const onImagePress = (item: ImageType) => {
+		setSelectedImage(item);
+	};
+
+	const renderImageItem = ({ item }: { item: ImageType }) => (
+		<Pressable onPress={() => onImagePress(item)}>
+			<Image style={styles.image} source={{ uri: item.urls.small }} />
+		</Pressable>
+	);
+
 	useEffect(() => {
-		// Log the image data when images change
 		console.log('Image Data:', images);
 	}, [images]);
+
+	const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+		Animated.event(
+			[{ nativeEvent: { contentOffset: { y: slideAnim } } }],
+			{ useNativeDriver: false }
+		)(event);
+	};
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -84,18 +146,19 @@ const PhotoSearch = () => {
 				</Pressable>
 			</View>
 			<FlatList
+				ref={flatListRef}
 				data={images}
 				keyExtractor={item => item.id}
-				renderItem={({ item }) => (
-					<Pressable onPress={() => setSelectedImage(item)}>
-						<Image style={styles.image} source={{ uri: item.urls.small }} />
-					</Pressable>
-				)}
-				onEndReached={handleLoadMore}
-				onEndReachedThreshold={0.5}
+				renderItem={renderImageItem}
+				onEndReached={handleLoadMore} // Trigger handleLoadMore when reaching the end of the list
+				onEndReachedThreshold={0.1} // Adjust this threshold value as needed
+				style={{ opacity: selectedImage ? 0 : 1 }}
+				onScroll={onScroll}
+				scrollEventThrottle={16}
 			/>
+
 			{selectedImage && (
-				<Animated.View style={[styles.selectedImageContainer, { transform: [{ translateX: slideAnim }] }]}>
+				<Animated.View style={[styles.selectedImageContainer, { transform: [{ translateY: slideAnim }] }]}>
 					<Pressable style={styles.closeButton} onPress={slideOut}>
 						<Text style={styles.closeButtonText}>X</Text>
 					</Pressable>
@@ -150,13 +213,7 @@ const styles = StyleSheet.create({
 	},
 	image: {
 		width: '100%',
-		height: 200,
-	},
-	imageWrapper: {
-		width: '90%',
-		height: 200,
-		justifyContent: 'center',
-		alignItems: 'center',
+		height: screenHeight > 600 ? 400 : 200, // Adjust the screen height breakpoint as needed
 	},
 	selectedImageContainer: {
 		position: 'absolute',
@@ -166,17 +223,18 @@ const styles = StyleSheet.create({
 		bottom: 0,
 		backgroundColor: 'rgba(0,0,0,1)',
 		alignItems: 'center',
+		maxHeight: screenHeight,
 	},
 	selectedImage: {
 		width: '100%',
-		height: 300, // Adjust the height here to make it bigger
+		height: 400,
 		marginTop: 0,
 	},
 	closeButton: {
 		position: 'absolute',
 		top: 10,
 		right: 10,
-		backgroundColor: 'gray',
+		backgroundColor: 'red',
 		borderRadius: 15,
 		width: 30,
 		height: 30,

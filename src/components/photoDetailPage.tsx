@@ -1,53 +1,130 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { RouteProp } from '@react-navigation/native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, TextInput, FlatList, Image, StyleSheet, SafeAreaView, Pressable, Text, Animated, Dimensions } from 'react-native';
+import { searchPhotos } from '../api/unsplashApi';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 interface ImageType {
-	id: string;
-	urls: {
-		small: string;
-		full: string;
-	};
 	user: {
 		name: string;
 	};
-	description: string;
-	// Add image data field
-	imageData: any[]; // You can change 'any' to a more specific type if needed
-}
-
-interface StackParams {
-	PhotoDetails: {
-		image: ImageType;
+	id: string;
+	urls: {
+		small: string;
 	};
+	description?: string;
+	created_at?: string;
+	updated_at?: string;
+	likes?: number;
+	color?: string;
+	height?: number;
+	width?: number;
 }
 
-interface Props {
-	route: RouteProp<StackParams, 'PhotoDetails'>;
-}
+const PhotoSearch = () => {
+	const [searchTerm, setSearchTerm] = useState<string>('');
+	const [images, setImages] = useState<ImageType[]>([]);
+	const [page, setPage] = useState<number>(1);
+	const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
 
-const PhotoDetailPage: React.FC<Props> = ({ route }) => {
-	const { image } = route.params;
+	const slideAnim = useRef(new Animated.Value(1000)).current;
+
+	const fetchData = async () => {
+		try {
+			const data = await searchPhotos(searchTerm, page);
+			setImages(prevImages => [...prevImages, ...data.results]);
+		} catch (error) {
+			console.error('Error fetching data:', error);
+		}
+	};
+
+	const handleLoadMore = () => {
+		setPage(prevPage => prevPage + 1);
+	};
+
+	const handleSearch = () => {
+		setImages([]);
+		setPage(1);
+		fetchData();
+	};
+
+	const slideIn = () => {
+		Animated.timing(slideAnim, {
+			toValue: 0,
+			duration: 500,
+			useNativeDriver: true,
+		}).start();
+	};
+
+	const slideOut = () => {
+		Animated.timing(slideAnim, {
+			toValue: 1000,
+			duration: 500,
+			useNativeDriver: true,
+		}).start(() => setSelectedImage(null));
+	};
+
+	useEffect(() => {
+		if (selectedImage) {
+			slideIn();
+		}
+	}, [selectedImage]);
+
+	const onImagePress = (item: ImageType) => {
+		setSelectedImage(item);
+	};
+
+	const renderImageItem = ({ item }: { item: ImageType }) => (
+		<Pressable onPress={() => onImagePress(item)}>
+			<Image style={styles.image} source={{ uri: item.urls.small }} />
+		</Pressable>
+	);
+
+	useEffect(() => {
+		console.log('Image Data:', images);
+	}, [images]);
 
 	return (
 		<SafeAreaView style={styles.container}>
-			<Image style={styles.image} source={{ uri: image.urls.full }} />
-			<View style={styles.textContainer}>
-				<Text style={styles.text}>User: {image.user.name}</Text>
-				<Text style={styles.text}>Description: {image.description || 'No description'}</Text>
+			<View style={styles.searchBarContainer}>
+				<TextInput
+					style={styles.searchBar}
+					placeholder="Search for images..."
+					value={searchTerm}
+					onChangeText={text => setSearchTerm(text)}
+				/>
+				<Pressable style={styles.pressableButton} onPress={handleSearch}>
+					<Text style={styles.buttonText}>Search</Text>
+				</Pressable>
 			</View>
-
-			{/* Display Image Data */}
-			<View style={styles.imageDataContainer}>
-				<Text style={styles.imageDataTitle}>Image Data:</Text>
-				<ScrollView>
-					{image.imageData.map((data: any, index: number) => (
-						<View key={index} style={styles.imageData}>
-							<Text>{JSON.stringify(data, null, 2)}</Text>
-						</View>
-					))}
-				</ScrollView>
+			<View style={styles.imageListContainer}>
+				<FlatList
+					data={images}
+					keyExtractor={item => item.id}
+					renderItem={renderImageItem}
+					onEndReached={handleLoadMore}
+					onEndReachedThreshold={0.5}
+				/>
 			</View>
+			{selectedImage && (
+				<Animated.View style={[styles.selectedImageContainer, { transform: [{ translateY: slideAnim }] }]}>
+					<Pressable style={styles.closeButton} onPress={slideOut}>
+						<Text style={styles.closeButtonText}>X</Text>
+					</Pressable>
+					<Image style={styles.selectedImage} source={{ uri: selectedImage.urls.small }} />
+					<View style={styles.imageDetails}>
+						<Text style={styles.imageDetailText}>User: {selectedImage.user.name}</Text>
+						<Text style={styles.imageDetailText}>Description: {selectedImage.description || 'No description'}</Text>
+						<Text style={styles.imageDetailText}>ID: {selectedImage.id}</Text>
+						<Text style={styles.imageDetailText}>Created At: {selectedImage.created_at}</Text>
+						<Text style={styles.imageDetailText}>Updated At: {selectedImage.updated_at}</Text>
+						<Text style={styles.imageDetailText}>Likes: {selectedImage.likes}</Text>
+						<Text style={styles.imageDetailText}>Color: {selectedImage.color}</Text>
+						<Text style={styles.imageDetailText}>Height: {selectedImage.height}</Text>
+						<Text style={styles.imageDetailText}>Width: {selectedImage.width}</Text>
+					</View>
+				</Animated.View>
+			)}
 		</SafeAreaView>
 	);
 };
@@ -55,40 +132,78 @@ const PhotoDetailPage: React.FC<Props> = ({ route }) => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: 'lightgrey',
+	},
+	searchBarContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		paddingHorizontal: 10,
+		paddingVertical: 15,
+		backgroundColor: 'white',
+	},
+	searchBar: {
+		flex: 1,
+		height: 40,
+		borderColor: 'gray',
+		borderWidth: 1,
+		marginRight: 10,
+		paddingLeft: 8,
+		borderRadius: 5,
+	},
+	pressableButton: {
+		backgroundColor: 'green',
+		padding: 10,
+		justifyContent: 'center',
+		alignItems: 'center',
+		borderRadius: 5,
+	},
+	buttonText: {
+		color: 'white',
 	},
 	image: {
 		width: '100%',
-		height: 600,
+		height: 200,
 	},
-	textContainer: {
-		padding: 10,
+	imageListContainer: {
+		flex: 1, // Fill remaining space
 	},
-	text: {
-		color: '#000',
-		fontSize: 16,
-		marginBottom: 10,
+	selectedImageContainer: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: 'rgba(0,0,0,1)',
+		alignItems: 'center',
+		maxHeight: screenHeight, // Limit the height to screen height
 	},
-	// Add new styles for displaying image data
-	imageDataContainer: {
-		padding: 10,
-		backgroundColor: 'white',
-		marginVertical: 10,
-		borderColor: 'grey',
-		borderWidth: 1,
+	selectedImage: {
+		width: '100%',
+		height: 300, // Adjust the height here to make it bigger
+		marginTop: 0,
 	},
-	imageDataTitle: {
+	closeButton: {
+		position: 'absolute',
+		top: 10,
+		right: 10,
+		backgroundColor: 'gray',
+		borderRadius: 15,
+		width: 30,
+		height: 30,
+		justifyContent: 'center',
+		alignItems: 'center',
+		zIndex: 1,
+	},
+	closeButtonText: {
+		color: 'white',
 		fontSize: 18,
-		fontWeight: 'bold',
-		marginBottom: 10,
 	},
-	imageData: {
-		backgroundColor: 'white',
-		borderColor: 'grey',
-		borderWidth: 1,
-		padding: 10,
-		marginBottom: 10,
+	imageDetails: {
+		padding: 20,
+	},
+	imageDetailText: {
+		color: 'white',
 	},
 });
 
-export default PhotoDetailPage;
+export default PhotoSearch;
