@@ -37,10 +37,14 @@ interface ImageType {
 const PhotoSearch = () => {
 	const [searchTerm, setSearchTerm] = useState<string>('');
 	const [images, setImages] = useState<ImageType[]>([]);
-	const [page, setPage] = useState<number>(1);
 	const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [totalImages, setTotalImages] = useState<number>(0);
+	const [page, setPage] = useState<number>(1); // Current page for the active search
+	const [orientationFilter, setOrientationFilter] = useState<string>('');
+
+	// New state for the popular filter
+	const [popularFilter, setPopularFilter] = useState<boolean>(false);
 
 	const slideAnim = useRef(new Animated.Value(1000)).current;
 	const flatListRef = useRef<FlatList<ImageType> | null>(null);
@@ -54,25 +58,34 @@ const PhotoSearch = () => {
 		setIsLoading(true);
 
 		try {
-			const data = await searchPhotos(searchTerm, page);
-			// Check if we've reached the limit of 500 images before updating the state
-			if (data.results.length >= 500) {
-				setIsLoading(false);
-				return;
+			let data;
+			if (orientationFilter) {
+				data = await searchPhotos(searchTerm, page, orientationFilter);
+			} else {
+				data = await searchPhotos(searchTerm, page);
+			}
+
+			let filteredImages = data.results;
+
+			// Apply a filter for images with over 500 likes (popular images)
+			if (popularFilter) {
+				filteredImages = filteredImages.filter((image: ImageType) =>
+					image.likes && image.likes > 500
+				);
 			}
 
 			if (page === 1) {
 				// If it's the first page, replace the old images with the new ones.
-				setImages(data.results);
+				setImages(filteredImages);
 			} else {
 				// Otherwise, append to the existing images.
-				setImages(prevImages => [...prevImages, ...data.results]);
+				setImages((prevImages) => [...prevImages, ...filteredImages]);
 			}
 
 			setTotalImages(data.total);
 
-			// Update page count after successful fetch
-			setPage(prevPage => prevPage + 1);
+			// Update page count after a successful fetch
+			setPage((prevPage) => prevPage + 1);
 		} catch (error) {
 			console.error('Error fetching data:', error);
 		} finally {
@@ -80,21 +93,27 @@ const PhotoSearch = () => {
 		}
 	};
 
-
 	const handleLoadMore = (info: { distanceFromEnd: number }) => {
-		if (!isLoading && images.length < 500) {
-			fetchData();
+		if (!isLoading) {
+			fetchData(); // Load more images for the active search
 		}
+	};
+
+	const handleFilter = () => {
+		// Reset everything before applying filters
+		setImages([]);
+		setPage(1); // Reset page count for the filtered search
+		setTotalImages(0);
+		fetchData(); // Call fetchData directly without setTimeout
 	};
 
 	const handleSearch = () => {
 		// Reset everything before a new search
 		setImages([]);
-		setPage(1);
+		setPage(1); // Reset page count for the new search
 		setTotalImages(0);
 		fetchData(); // Call fetchData directly without setTimeout
 	};
-
 
 	const slideIn = () => {
 		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -148,16 +167,42 @@ const PhotoSearch = () => {
 					style={styles.searchBar}
 					placeholder="Search for images..."
 					value={searchTerm}
-					onChangeText={text => setSearchTerm(text)}
+					onChangeText={(text) => setSearchTerm(text)}
 				/>
 				<Pressable style={styles.pressableButton} onPress={handleSearch}>
 					<Text style={styles.buttonText}>Search</Text>
 				</Pressable>
 			</View>
+			{/* Orientation filter dropdown */}
+			<View style={styles.filterContainer}>
+				<Text>Orientation Filter:</Text>
+				<select
+					value={orientationFilter}
+					onChange={(e) => setOrientationFilter(e.target.value)}
+					style={styles.filterSelect}
+				>
+					<option value="">No Filter</option>
+					<option value="portrait">Portrait</option>
+					<option value="landscape">Landscape</option>
+					{/* Add more orientations */}
+				</select>
+			</View>
+			{/* Popular filter checkbox */}
+			<View style={styles.filterContainer}>
+				<Text>Show Popular Images:</Text>
+				<input
+					type="checkbox"
+					checked={popularFilter}
+					onChange={() => setPopularFilter(!popularFilter)}
+				/>
+			</View>
+			<Pressable style={styles.filterButton} onPress={handleFilter}>
+				<Text style={styles.buttonText}>Filter</Text>
+			</Pressable>
 			<FlatList
 				ref={flatListRef}
 				data={images}
-				keyExtractor={item => item.id}
+				keyExtractor={(item) => item.id}
 				renderItem={renderImageItem}
 				onEndReached={handleLoadMore}
 				onEndReachedThreshold={0.1}
@@ -260,6 +305,34 @@ const styles = StyleSheet.create({
 	},
 	imageDetailText: {
 		color: 'white',
+	},
+	// Add styles for filter container and select
+	filterContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginVertical: 10,
+	},
+	filterTextInput: {
+		flex: 1,
+		height: 40,
+		borderColor: 'gray',
+		borderWidth: 1,
+		marginLeft: 10,
+		paddingLeft: 8,
+		borderRadius: 5,
+	},
+	filterSelect: {
+		height: 40,
+		width: 150,
+		marginLeft: 10,
+	},
+	filterButton: {
+		backgroundColor: 'blue',
+		padding: 10,
+		justifyContent: 'center',
+		alignItems: 'center',
+		borderRadius: 5,
+		marginVertical: 10,
 	},
 });
 
