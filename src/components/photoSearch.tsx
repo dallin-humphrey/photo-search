@@ -45,24 +45,33 @@ const PhotoSearch = () => {
 	const slideAnim = useRef(new Animated.Value(1000)).current;
 	const flatListRef = useRef<FlatList<ImageType> | null>(null);
 
-	const fetchData = async () => {
+	const fetchData = async (): Promise<void> => {
+		// Prevent multiple simultaneous requests
 		if (isLoading) {
-			return; // Prevent multiple simultaneous requests
+			return;
 		}
 
 		setIsLoading(true);
 
 		try {
 			const data = await searchPhotos(searchTerm, page);
-			const newImages = [...images, ...data.results];
-			setImages(newImages);
-			setTotalImages(data.total);
-
-			// If we've reached the limit of 500 images, stop loading more
-			if (newImages.length >= 500) {
+			// Check if we've reached the limit of 500 images before updating the state
+			if (data.results.length >= 500) {
+				setIsLoading(false);
 				return;
 			}
 
+			if (page === 1) {
+				// If it's the first page, replace the old images with the new ones.
+				setImages(data.results);
+			} else {
+				// Otherwise, append to the existing images.
+				setImages(prevImages => [...prevImages, ...data.results]);
+			}
+
+			setTotalImages(data.total);
+
+			// Update page count after successful fetch
 			setPage(prevPage => prevPage + 1);
 		} catch (error) {
 			console.error('Error fetching data:', error);
@@ -71,21 +80,21 @@ const PhotoSearch = () => {
 		}
 	};
 
-	const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 	const handleLoadMore = (info: { distanceFromEnd: number }) => {
-		if (!isLoading && images.length < 500 && info.distanceFromEnd < 100) {
+		if (!isLoading && images.length < 500) {
 			fetchData();
 		}
 	};
 
-
 	const handleSearch = () => {
+		// Reset everything before a new search
 		setImages([]);
 		setPage(1);
 		setTotalImages(0);
-		fetchData();
+		fetchData(); // Call fetchData directly without setTimeout
 	};
+
 
 	const slideIn = () => {
 		flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -150,8 +159,8 @@ const PhotoSearch = () => {
 				data={images}
 				keyExtractor={item => item.id}
 				renderItem={renderImageItem}
-				onEndReached={handleLoadMore} // Trigger handleLoadMore when reaching the end of the list
-				onEndReachedThreshold={0.1} // Adjust this threshold value as needed
+				onEndReached={handleLoadMore}
+				onEndReachedThreshold={0.1}
 				style={{ opacity: selectedImage ? 0 : 1 }}
 				onScroll={onScroll}
 				scrollEventThrottle={16}
@@ -213,7 +222,7 @@ const styles = StyleSheet.create({
 	},
 	image: {
 		width: '100%',
-		height: screenHeight > 600 ? 400 : 200, // Adjust the screen height breakpoint as needed
+		height: screenHeight > 600 ? 400 : 200,
 	},
 	selectedImageContainer: {
 		position: 'absolute',
