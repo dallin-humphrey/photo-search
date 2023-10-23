@@ -20,3 +20,8 @@ The styles aren't as polished as I would like either.
 
 I would also liked to have gotten the some tests added to the project.
 
+I've also got one of these console errors that needs to be fixed:
+react-dom.development.js:86 Warning: Encountered two children with the same key, `.$5APBLfC2hUs`. 
+Keys should be unique so that components maintain their identity across updates. 
+Non-unique keys may cause children to be duplicated and/or omitted — 
+the behavior is unsupported and could change in a future version.
