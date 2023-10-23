@@ -74,6 +74,17 @@ const PhotoSearch = () => {
 				);
 			}
 
+			// Apply a filter for landscape and portrait images
+			if (orientationFilter === 'landscape') {
+				filteredImages = filteredImages.filter((image: ImageType) =>
+					image.width && image.height && image.width > image.height
+				);
+			} else if (orientationFilter === 'portrait') {
+				filteredImages = filteredImages.filter((image: ImageType) =>
+					image.width && image.height && image.height > image.width
+				);
+			}
+
 			if (page === 1) {
 				// If it's the first page, replace the old images with the new ones.
 				setImages(filteredImages);
